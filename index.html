@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My 10 Links</title>
+<title>NWEZHYAN - 10 Links</title>
 
 <style>
 * {
@@ -116,19 +115,6 @@ footer {
   margin-top: 28px;
 }
 
-.back {
-  display: inline-block;
-  margin-top: 25px;
-  padding: 14px 25px;
-  border: 0;
-  border-radius: 30px;
-  background: linear-gradient(100deg,#008cff,#8d2cff);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
 .page {
   display: none;
   text-align: center;
@@ -167,6 +153,19 @@ footer {
   color: #b8ffe5;
 }
 
+.back {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 14px 25px;
+  border: 0;
+  border-radius: 30px;
+  background: linear-gradient(100deg,#008cff,#8d2cff);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 @keyframes appear {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -185,14 +184,14 @@ footer {
 
   <section id="home" class="home">
     <header>
-      <h1>My <span>10</span> Links</h1>
-      <p>Choose a button to open the next page</p>
+      <h1>NWEZHYAN <span>10</span> Links</h1>
+      <p>Choose a button to open a page</p>
       <div class="line"></div>
     </header>
 
     <nav class="buttons" id="buttons"></nav>
 
-    <footer>© 2026 My Website</footer>
+    <footer>© 2026 NWEZHYAN</footer>
   </section>
 
   <section id="page" class="page">
@@ -245,7 +244,6 @@ function openPage(number) {
   const page = document.getElementById("page");
   page.classList.remove("active");
 
-  // Restart the page animation.
   void page.offsetWidth;
 
   document.getElementById("pageNumber").textContent =
@@ -262,7 +260,6 @@ function openPage(number) {
 
   page.classList.add("active");
 
-  // Update the browser address so each page can be bookmarked.
   history.pushState({ page: number }, "", "#" + number);
 }
 
@@ -273,14 +270,18 @@ function goHome() {
   history.pushState({ page: 0 }, "", location.pathname);
 }
 
+function showHome() {
+  document.getElementById("page").classList.remove("active");
+  document.getElementById("home").classList.remove("hidden");
+}
+
 window.addEventListener("popstate", function() {
   const number = parseInt(location.hash.slice(1), 10);
 
   if (number >= 1 && number <= 10) {
     openPageWithoutHistory(number);
   } else {
-    document.getElementById("page").classList.remove("active");
-    document.getElementById("home").classList.remove("hidden");
+    showHome();
   }
 });
 
@@ -302,7 +303,6 @@ function openPageWithoutHistory(number) {
   document.getElementById("page").classList.add("active");
 }
 
-// Open the selected page if the URL already contains a page number.
 const initialPage = parseInt(location.hash.slice(1), 10);
 
 if (initialPage >= 1 && initialPage <= 10) {
