@@ -1,54 +1,313 @@
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My 10 Links</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My 10 Links</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  font-family: Arial, sans-serif;
+  color: white;
+  background:
+    radial-gradient(ellipse at top left, #183566, transparent 55%),
+    linear-gradient(135deg, #071126, #030714);
+}
+
+.container {
+  width: min(100%, 850px);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+h1 {
+  font-size: clamp(32px, 5vw, 48px);
+  margin-bottom: 10px;
+}
+
+h1 span {
+  color: #22baff;
+}
+
+header p {
+  color: #b8c5e5;
+  font-size: 16px;
+}
+
+.line {
+  width: 80px;
+  height: 5px;
+  margin: 20px auto;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #00baff, #a52cff);
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.btn {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px;
+  border-radius: 17px;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+  border: 1px solid #ffffff30;
+  box-shadow: 0 8px 20px #0003;
+  cursor: pointer;
+  transition: transform .2s, filter .2s;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.15);
+}
+
+.number {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #ffffff30;
+}
+
+.arrow {
+  margin-left: auto;
+  font-size: 24px;
+}
+
+.blue   { background: linear-gradient(120deg,#008cff,#4938f5); }
+.purple { background: linear-gradient(120deg,#a13cff,#6428e8); }
+.green  { background: linear-gradient(120deg,#0fc878,#008f78); }
+.orange { background: linear-gradient(120deg,#ffb000,#ff6a00); }
+.red    { background: linear-gradient(120deg,#ff435f,#d90d48); }
+.cyan   { background: linear-gradient(120deg,#00c4df,#0877dc); }
+.violet { background: linear-gradient(120deg,#a04bff,#5632e9); }
+.teal   { background: linear-gradient(120deg,#00caa7,#008f9d); }
+.pink   { background: linear-gradient(120deg,#ed36ba,#b415ed); }
+.navy   { background: linear-gradient(120deg,#337cff,#4430d8); }
+
+footer {
+  text-align: center;
+  color: #8fa2ca;
+  font-size: 13px;
+  margin-top: 28px;
+}
+
+.back {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 14px 25px;
+  border: 0;
+  border-radius: 30px;
+  background: linear-gradient(100deg,#008cff,#8d2cff);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.page {
+  display: none;
+  text-align: center;
+  padding: 30px 10px;
+  animation: appear .3s ease;
+}
+
+.page.active {
+  display: block;
+}
+
+.home.hidden {
+  display: none;
+}
+
+.page-icon {
+  width: 100px;
+  height: 100px;
+  margin: 25px auto;
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  background: linear-gradient(135deg,#00baff,#6338f5);
+  font-size: 35px;
+  font-weight: bold;
+  box-shadow: 0 12px 35px #285bff55;
+}
+
+.message {
+  max-width: 450px;
+  margin: 25px auto;
+  padding: 18px;
+  background: #0b2332;
+  border: 1px solid #1d6658;
+  border-radius: 15px;
+  color: #b8ffe5;
+}
+
+@keyframes appear {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media(max-width:540px) {
+  body { padding: 18px; }
+  .buttons { grid-template-columns: 1fr; }
+  .btn { min-height: 64px; }
+}
+</style>
 </head>
+
 <body>
-  <main class="wrap">
+<main class="container">
+
+  <section id="home" class="home">
     <header>
       <h1>My <span>10</span> Links</h1>
-      <p class="subtitle">Choose a button to open the next page</p>
-      <div class="accent"></div>
+      <p>Choose a button to open the next page</p>
+      <div class="line"></div>
     </header>
-    <nav class="buttons" aria-label="Page links">
-      <a class="btn" href="1.html"><span class="num">01</span><span class="label">Page One</span><span class="arrow">→</span></a>
-      <a class="btn" href="2.html"><span class="num">02</span><span class="label">Page Two</span><span class="arrow">→</span></a>
-      <a class="btn" href="3.html"><span class="num">03</span><span class="label">Page Three</span><span class="arrow">→</span></a>
-      <a class="btn" href="4.html"><span class="num">04</span><span class="label">Page Four</span><span class="arrow">→</span></a>
-      <a class="btn" href="5.html"><span class="num">05</span><span class="label">Page Five</span><span class="arrow">→</span></a>
-      <a class="btn" href="6.html"><span class="num">06</span><span class="label">Page Six</span><span class="arrow">→</span></a>
-      <a class="btn" href="7.html"><span class="num">07</span><span class="label">Page Seven</span><span class="arrow">→</span></a>
-      <a class="btn" href="8.html"><span class="num">08</span><span class="label">Page Eight</span><span class="arrow">→</span></a>
-      <a class="btn" href="9.html"><span class="num">09</span><span class="label">Page Nine</span><span class="arrow">→</span></a>
-      <a class="btn" href="10.html"><span class="num">10</span><span class="label">Page Ten</span><span class="arrow">→</span></a>
-    </nav>
-    <footer>© 2026 My Website · HTML, CSS & JavaScript</footer>
-  </main>
-  <script src="script.js"></script>
-</body>
-</html>
-"""
-for i, title in enumerate(["One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"], start=1):
-    page = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Page {title}</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <main class="wrap">
-    <section class="page-card">
-      <div class="page-icon">{i:02}</div>
-      <h1>Page <span>{title}</span></h1>
-      <p>This is page {i}, opened from <strong>{'index.html' if i == 1 else 'the home page'}</strong>.</p>
-      <div class="accent"></div>
-      <div class="note">✓ You successfully opened <strong>{i}.html</strong></div>
-      <a class="back" href="index.html">← Go Back to Home</a>
-    </section>
-  </main>
+
+    <nav class="buttons" id="buttons"></nav>
+
+    <footer>© 2026 My Website</footer>
+  </section>
+
+  <section id="page" class="page">
+    <div class="page-icon" id="pageNumber">01</div>
+    <h1 id="pageTitle">Page One</h1>
+    <p id="pageDescription">Welcome to your page!</p>
+    <div class="line"></div>
+    <div class="message" id="pageMessage"></div>
+    <button class="back" onclick="goHome()">← Back to Home</button>
+  </section>
+
+</main>
+
+<script>
+const colors = [
+  "blue", "purple", "green", "orange", "red",
+  "cyan", "violet", "teal", "pink", "navy"
+];
+
+const words = [
+  "One", "Two", "Three", "Four", "Five",
+  "Six", "Seven", "Eight", "Nine", "Ten"
+];
+
+const buttons = document.getElementById("buttons");
+
+for (let i = 1; i <= 10; i++) {
+  const button = document.createElement("a");
+
+  button.href = "#" + i;
+  button.className = "btn " + colors[i - 1];
+
+  button.innerHTML = `
+    <span class="number">${String(i).padStart(2, "0")}</span>
+    <span>Page ${words[i - 1]}</span>
+    <span class="arrow">→</span>
+  `;
+
+  button.addEventListener("click", function(event) {
+    event.preventDefault();
+    openPage(i);
+  });
+
+  buttons.appendChild(button);
+}
+
+function openPage(number) {
+  document.getElementById("home").classList.add("hidden");
+
+  const page = document.getElementById("page");
+  page.classList.remove("active");
+
+  // Restart the page animation.
+  void page.offsetWidth;
+
+  document.getElementById("pageNumber").textContent =
+    String(number).padStart(2, "0");
+
+  document.getElementById("pageTitle").textContent =
+    "Page " + words[number - 1];
+
+  document.getElementById("pageDescription").textContent =
+    "Welcome to page " + number + "!";
+
+  document.getElementById("pageMessage").textContent =
+    "✓ Page " + number + " opened successfully.";
+
+  page.classList.add("active");
+
+  // Update the browser address so each page can be bookmarked.
+  history.pushState({ page: number }, "", "#" + number);
+}
+
+function goHome() {
+  document.getElementById("page").classList.remove("active");
+  document.getElementById("home").classList.remove("hidden");
+
+  history.pushState({ page: 0 }, "", location.pathname);
+}
+
+window.addEventListener("popstate", function() {
+  const number = parseInt(location.hash.slice(1), 10);
+
+  if (number >= 1 && number <= 10) {
+    openPageWithoutHistory(number);
+  } else {
+    document.getElementById("page").classList.remove("active");
+    document.getElementById("home").classList.remove("hidden");
+  }
+});
+
+function openPageWithoutHistory(number) {
+  document.getElementById("home").classList.add("hidden");
+
+  document.getElementById("pageNumber").textContent =
+    String(number).padStart(2, "0");
+
+  document.getElementById("pageTitle").textContent =
+    "Page " + words[number - 1];
+
+  document.getElementById("pageDescription").textContent =
+    "Welcome to page " + number + "!";
+
+  document.getElementById("pageMessage").textContent =
+    "✓ Page " + number + " opened successfully.";
+
+  document.getElementById("page").classList.add("active");
+}
+
+// Open the selected page if the URL already contains a page number.
+const initialPage = parseInt(location.hash.slice(1), 10);
+
+if (initialPage >= 1 && initialPage <= 10) {
+  openPageWithoutHistory(initialPage);
+}
+</script>
 </body>
 </html>
