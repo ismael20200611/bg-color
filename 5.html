@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3840x1080 Interactive Grid - Split Image</title>
+    <style>
+        /* Base Reset & Setup for 3840x1080 Ultra-wide */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #000; /* Black borders between boxes */
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevents scrollbars */
+        }
+
+        /* 7x7 Grid Container */
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            width: 100vw;
+            height: 100vh;
+            gap: 6px; /* Grid line thickness */
+            padding: 6px; /* Outer frame thickness */
+        }
+
+        /* Individual Box Styling */
+        .box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3vw; 
+            font-weight: bold;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+            position: relative;
+            
+            /* Hide text by default using transparency */
+            color: transparent; 
+        }
+
+        .box:hover {
+            filter: brightness(0.85);
+            transform: scale(0.98);
+        }
+
+        /* Menu Styling */
+        #menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            z-index: 100;
+            font-size: 1.2vw;
+            border: 2px solid #4DB8E6;
+            min-width: 450px;
+        }
+
+        .menu-header {
+            font-size: 2vw;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .input-group label {
+            text-align: center;
+        }
+
+        input[type="color"] {
+            width: 100px;
+            height: 50px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="file"] {
+            font-size: 1vw;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        input[type="file"]::file-selector-button {
+            background-color: #4DB8E6;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 15px;
+            transition: background 0.2s;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: #3aa1cc;
+        }
+
+        .timer-text {
+            margin-top: 10px;
+            font-size: 1vw;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .or-divider {
+            color: #888;
+            font-size: 1vw;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="grid"></div>
+
+    <div id="menu">
+        <div class="menu-header">Working on Box: <span id="current-box" style="color: #4DB8E6;">None</span></div>
+        
+        <div class="input-group">
+            <label for="bg-color">1. Change Color<br><span style="font-size: 0.8vw; color:#aaa;">(Applies to THIS box only)</span></label>
+            <input type="color" id="bg-color">
+        </div>
+
+        <div class="or-divider">AND / OR</div>
+
+        <div class="input-group">
+            <label for="bg-image">2. Upload Giant Image<br><span style="font-size: 0.8vw; color:#aaa;">(Splits 1 image across ALL 49 boxes)</span></label>
+            <input type="file" id="bg-image" accept="image/*">
+        </div>
+
+        <div class="timer-text">Menu auto-hides in <span id="countdown">10</span>s</div>
+    </div>
+
+    <script>
+        const rows = ['A', 'B', 'C', 'd', 'e', 'f', 'h'];
+        const grid = document.getElementById('grid');
+        const menu = document.getElementById('menu');
+        const currentBoxLabel = document.getElementById('current-box');
+        const bgColorInput = document.getElementById('bg-color');
+        const bgImageInput = document.getElementById('bg-image');
+        const countdownLabel = document.getElementById('countdown');
+        
+        let hideTimeout;
+        let countdownInterval;
+        let activeBox = null;
+
+        // Generate Colors
+        function HSLToHex(h, s, l) {
+            s /= 100; l /= 100;
+            let c = (1 - Math.abs(2 * l - 1)) * s,
+                x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+                m = l - c/2, r = 0, g = 0, b = 0;
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; } 
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; } 
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; } 
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; } 
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; } 
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+            r = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+            g = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+            b = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+            return `#${r}${g}${b}`;
+        }
+
+        // Generate Grid
+        let boxCount = 0;
+        rows.forEach((row) => {
+            for (let col = 1; col <= 7; col++) {
+                const box = document.createElement('div');
+                const boxId = row + col;
+                
+                box.className = 'box';
+                box.textContent = boxId;
+                box.id = boxId;
+
+                const hue = Math.floor((boxCount / 49) * 360);
+                const hexColor = HSLToHex(hue, 80, 85);
+                
+                box.style.backgroundColor = hexColor;
+                box.dataset.bgColor = hexColor; 
+
+                box.addEventListener('click', () => openMenu(box, boxId));
+                
+                grid.appendChild(box);
+                boxCount++;
+            }
+        });
+
+        // Menu Logic
+        function openMenu(box, id) {
+            if (activeBox && activeBox !== box) {
+                activeBox.style.color = 'transparent';
+                activeBox.style.textShadow = 'none';
+            }
+            
+            activeBox = box;
+            currentBoxLabel.textContent = id;
+            bgColorInput.value = box.dataset.bgColor;
+            bgImageInput.value = ""; 
+            
+            // Highlight text while working on this box
+            activeBox.style.color = '#000000';
+            activeBox.style.textShadow = '0 0 15px #ffffff, 0 0 15px #ffffff, 0 0 15px #ffffff';
+
+            menu.style.display = 'flex';
+            resetTimer();
+        }
+
+        function closeMenu() {
+            if (activeBox) {
+                activeBox.style.color = 'transparent';
+                activeBox.style.textShadow = 'none';
+                activeBox = null;
+            }
+            menu.style.display = 'none';
+            clearInterval(countdownInterval);
+            clearTimeout(hideTimeout);
+        }
+
+        function resetTimer() {
+            clearTimeout(hideTimeout);
+            clearInterval(countdownInterval);
+
+            let secondsLeft = 10;
+            countdownLabel.textContent = secondsLeft;
+
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                countdownLabel.textContent = secondsLeft;
+            }, 1000);
+
+            hideTimeout = setTimeout(() => {
+                closeMenu();
+            }, 10000);
+        }
+
+        // INDIVIDUAL Box Color Change
+        bgColorInput.addEventListener('input', (e) => {
+            if (activeBox) {
+                const newColor = e.target.value;
+                activeBox.style.backgroundColor = newColor;
+                activeBox.dataset.bgColor = newColor; 
+                
+                // Removes image from this specific box so the color is visible
+                activeBox.style.backgroundImage = 'none';
+            }
+            resetTimer(); 
+        });
+
+        // GLOBAL Image Upload (Splits 1 image perfectly across all 49 boxes)
+        bgImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    const imageUrl = event.target.result;
+                    
+                    const allBoxes = document.querySelectorAll('.box');
+                    allBoxes.forEach(box => {
+                        // Apply image
+                        box.style.backgroundImage = `url(${imageUrl})`;
+                        
+                        // MAGIC TRICK: Fixed maps the image to the screen viewport (3840x1080)
+                        // This makes the 49 boxes act like a window grid looking at 1 single image behind them.
+                        box.style.backgroundAttachment = 'fixed';
+                        box.style.backgroundSize = '100vw 100vh';
+                        box.style.backgroundPosition = 'top left';
+                        box.style.backgroundRepeat = 'no-repeat';
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            resetTimer(); 
+        });
+
+        menu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetTimer();
+        });
+    </script>
+</body>
+</html>
