@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3840 × 1080 Box Color Control</title>
+<style>
+  :root {
+    --page-bg: #11151b;
+    --panel-bg: #1b222c;
+    --line: #050608;
+    --text: #f5f7fa;
+    --muted: #aab4c2;
+    --accent: #42c8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; min-height: 100%; font-family: Arial, Helvetica, sans-serif; background: var(--page-bg); color: var(--text); }
+  body { padding: 12px; }
+  .app { width: 100%; max-width: 3840px; margin: 0 auto; }
+  /* Clean broadcast view: show only the grid until the user requests controls. */
+  body.clean-view { padding: 0; overflow: hidden; background: #000; }
+  body.clean-view .toolbar,
+  body.clean-view .under { display: none; }
+  body.clean-view .app { max-width: none; width: 100vw; height: 100vh; }
+  body.clean-view .stage { width: 100vw; height: 100vh; aspect-ratio: auto; min-height: 0; border-width: 4px; }
+  body.clean-view .cell { cursor: crosshair; }
+  body.clean-view .cell.selected { box-shadow: none; }
+  body.clean-view .cell:hover { filter: none; }
+  .menu-hint {
+    position: fixed; z-index: 20; right: 14px; bottom: 12px;
+    padding: 7px 10px; border-radius: 6px; color: #fff;
+    background: #111c; border: 1px solid #ffffff44; font-size: 12px;
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  .menu-hint.visible { opacity: 1; }
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px;
+    background: var(--panel-bg); border: 1px solid #343d49; border-radius: 10px;
+  }
+  .heading { display: flex; flex-direction: column; gap: 4px; }
+  .heading h1 { margin: 0; font-size: clamp(18px, 1.2vw, 30px); letter-spacing: .04em; }
+  .heading p { margin: 0; color: var(--muted); font-size: 13px; }
+  .tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  button, select, input[type="text"] {
+    font: inherit; color: var(--text); background: #27313e; border: 1px solid #485568;
+    border-radius: 6px; padding: 8px 10px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #354356; }
+  .stage {
+    width: 100%; aspect-ratio: 3840 / 1080; min-height: 260px;
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(7, minmax(0, 1fr));
+    border: 4px solid var(--line); background: white; overflow: hidden;
+  }
+  .cell {
+    position: relative; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--cell-bg, #ffffff); color: var(--cell-fg, #111111);
+    border-right: 4px solid var(--line); border-bottom: 4px solid var(--line);
+    outline: none; cursor: pointer; transition: filter .12s ease;
+  }
+  .cell:nth-child(7n) { border-right: 0; }
+  .cell:nth-last-child(-n+7) { border-bottom: 0; }
+  .cell.selected { box-shadow: inset 0 0 0 5px #00b9ff; z-index: 1; }
+  .cell:hover { filter: brightness(.96); }
+  .cell-label {
+    font-size: clamp(12px, 1.45vw, 54px); line-height: 1; font-weight: 500;
+    user-select: none; text-align: center;
+  }
+  .cell-label.large { font-size: clamp(18px, 2.9vw, 108px); font-weight: 800; letter-spacing: .015em; }
+  .cell-label.blue-outline {
+    color: #a9e8ff; -webkit-text-stroke: 1.5px #00a7ec;
+    text-shadow: 1px 1px 0 #00a7ec;
+  }
+  .under {
+    display: grid; grid-template-columns: minmax(240px, .8fr) minmax(300px, 1.2fr);
+    gap: 12px; margin-top: 12px;
+  }
+  .panel { background: var(--panel-bg); border: 1px solid #343d49; border-radius: 10px; padding: 14px; min-width: 0; }
+  .panel h2 { margin: 0 0 12px; font-size: 16px; }
+  .selected-name { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+  .picker-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input[type="color"] { width: 58px; height: 42px; padding: 3px; background: #27313e; border: 1px solid #485568; border-radius: 6px; cursor: pointer; }
+  .color-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .field { min-width: 0; }
+  .field label { display: block; color: var(--muted); font-size: 11px; margin: 0 0 5px; text-transform: uppercase; letter-spacing: .08em; }
+  .field input { width: 100%; min-width: 0; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+  .swatch { width: 30px; height: 30px; padding: 0; border-radius: 6px; border: 2px solid #ffffff66; }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 10px 0 0; }
+  .status { color: var(--muted); font-size: 12px; }
+  @media (max-width: 760px) {
+    body { padding: 6px; }
+    .stage { min-height: 220px; border-width: 2px; }
+    .cell { border-right-width: 2px; border-bottom-width: 2px; }
+    .under { grid-template-columns: 1fr; }
+    .color-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .toolbar { padding: 10px; }
+  }
+  @media (min-width: 2400px) {
+    .toolbar { padding: 18px 24px; }
+    .panel { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="toolbar">
+    <div class="heading">
+      <h1>BOX COLOR CONTROL</h1>
+      <p>3840 × 1080 canvas · 7 columns × 7 rows · Select a box to edit its color</p>
+    </div>
+    <div class="tools">
+      <label class="status" for="preset">Palette</label>
+      <select id="preset" aria-label="Color palette">
+        <option value="vivid">Vivid broadcast</option>
+        <option value="pastel">Soft pastel</option>
+        <option value="dark">Dark studio</option>
+        <option value="mono">Monochrome</option>
+      </select>
+      <button id="applyPalette">Apply palette</button>
+      <button id="reset">Reset</button>
+      <button id="export">Export colors JSON</button>
+    </div>
+  </header>
+
+  <main id="stage" class="stage" aria-label="Seven by seven color control grid"></main>
+
+  <section class="under">
+    <div class="panel">
+      <h2>Selected box</h2>
+      <div class="selected-name" id="selectedName">A1</div>
+      <div class="picker-row">
+        <input type="color" id="colorPicker" value="#ffffff" aria-label="Choose box color">
+        <div>
+          <div><strong id="hexPreview">#FFFFFF</strong></div>
+          <div class="status">Click any box to select it.</div>
+        </div>
+      </div>
+      <div class="swatches" id="swatches" aria-label="Quick color swatches"></div>
+      <p class="hint">The color picker changes only the selected box. Use the fields at right to enter an exact color code.</p>
+    </div>
+    <div class="panel">
+      <h2>Color codes</h2>
+      <div class="color-fields">
+        <div class="field"><label for="hexInput">HEX</label><input id="hexInput" type="text" value="#FFFFFF" spellcheck="false"></div>
+        <div class="field"><label for="rgbInput">RGB</label><input id="rgbInput" type="text" readonly></div>
+        <div class="field"><label for="hslInput">HSL</label><input id="hslInput" type="text" readonly></div>
+        <div class="field"><label for="oklchInput">OKLCH</label><input id="oklchInput" type="text" readonly></div>
+      </div>
+      <p class="hint">HEX is editable. RGB, HSL and OKLCH are calculated from the selected color. Browser support for OKLCH color conversion may vary.</p>
+    </div>
+  </section>
+</div>
+<div id="menuHint" class="menu-hint">Move mouse or press M to show controls · menu hides after 10 seconds</div>
+
+<script>
+(() => {
+  const rowNames = ['A', 'B', 'C', 'D', 'E', 'F', 'H'];
+  const stage = document.getElementById('stage');
+  const cells = new Map();
+  let selectedId = 'A1';
+  let hideMenuTimer = null;
+  let menuVisible = false;
+  const AUTO_HIDE_MS = 10000;
+
+  const palettes = {
+    vivid: ['#00B7FF','#FFB000','#00D084','#FF4D6D','#8B5CF6','#00C2C7','#F97316'],
+    pastel: ['#BDEBFF','#FFE0A3','#C9F7D4','#FFC9D4','#DCCBFF','#BDF5F0','#FFD6B3'],
+    dark: ['#123047','#4B3210','#123B2B','#4B1722','#2B1D4B','#103B3D','#4A2816'],
+    mono: ['#FFFFFF','#E6E6E6','#CCCCCC','#B3B3B3','#999999','#737373','#4D4D4D']
+  };
+  const swatchColors = ['#FFFFFF','#000000','#FF0000','#FF7A00','#FFFF00','#00C853','#00B0FF','#304FFE','#9C27B0','#FF4081','#00BFA5','#607D8B'];
+  const initialColors = {};
+
+  rowNames.forEach((row, rowIndex) => {
+    for (let col = 1; col <= 7; col++) {
+      const id = `${row}${col}`;
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell';
+      cell.dataset.id = id;
+      cell.setAttribute('aria-label', `${id}, select box color`);
+      const label = document.createElement('span');
+      label.className = 'cell-label';
+      label.textContent = id;
+      if (rowIndex === 0 || id === 'B1') {
+        label.classList.add('large', 'blue-outline');
+      }
+      cell.appendChild(label);
+      const color = '#FFFFFF';
+      initialColors[id] = color;
+      setCellColor(cell, color);
+      cell.addEventListener('click', () => selectCell(id));
+      stage.appendChild(cell);
+      cells.set(id, cell);
+    }
+  });
+
+  function setCellColor(cell, hex) {
+    cell.style.setProperty('--cell-bg', hex);
+    const rgb = hexToRgb(hex);
+    const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+    cell.style.setProperty('--cell-fg', luminance > 0.58 ? '#111111' : '#FFFFFF');
+  }
+  function normalizeHex(value) {
+    let v = value.trim();
+    if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9a-fA-F]{3}$/.test(v)) v = '#' + v.slice(1).split('').map(x => x+x).join('');
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null;
+  }
+  function hexToRgb(hex) {
+    const h = hex.replace('#','');
+    return {r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16)};
+  }
+  function rgbToHsl({r,g,b}) {
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0, s=0, l=(max+min)/2;
+    if (d !== 0) {
+      s=d/(1-Math.abs(2*l-1));
+      switch(max) {
+        case r: h=60*(((g-b)/d)%6); break;
+        case g: h=60*((b-r)/d+2); break;
+        default: h=60*((r-g)/d+4);
+      }
+    }
+    if (h<0) h+=360;
+    return {h:Math.round(h), s:Math.round(s*100), l:Math.round(l*100)};
+  }
+  function srgbToLinear(v) {
+    v /= 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+  function rgbToOklch({r,g,b}) {
+    const R=srgbToLinear(r), G=srgbToLinear(g), B=srgbToLinear(b);
+    const l=Math.cbrt(0.4122214708*R+0.5363325363*G+0.0514459929*B);
+    const m=Math.cbrt(0.2119034982*R+0.6806995451*G+0.1073969566*B);
+    const s=Math.cbrt(0.0883024619*R+0.2817188376*G+0.6299787005*B);
+    const L=0.2104542553*l+0.793617785*m-0.0040720468*s;
+    const a=1.9779984951*l-2.428592205*m+0.4505937092*s;
+    const bb=0.0259040371*l+0.7827717662*m-0.808675766*s;
+    const C=Math.sqrt(a*a+bb*bb);
+    let H=Math.atan2(bb,a)*180/Math.PI; if(H<0) H+=360;
+    return {L:(L*100).toFixed(1), C:C.toFixed(3), H:Math.round(H)};
+  }
+  function updateColor(id, hex) {
+    const normalized = normalizeHex(hex);
+    if (!normalized) return false;
+    const cell = cells.get(id);
+    setCellColor(cell, normalized);
+    cell.dataset.color = normalized;
+    if (id === selectedId) updateReadout(normalized);
+    return true;
+  }
+  function currentColor(id) {
+    return cells.get(id).dataset.color || '#FFFFFF';
+  }
+  function updateReadout(hex) {
+    const rgb = hexToRgb(hex), hsl = rgbToHsl(rgb), oklch = rgbToOklch(rgb);
+    document.getElementById('colorPicker').value = hex;
+    document.getElementById('hexInput').value = hex;
+    document.getElementById('hexPreview').textContent = hex;
+    document.getElementById('rgbInput').value = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    document.getElementById('hslInput').value = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+    document.getElementById('oklchInput').value = `oklch(${oklch.L}% ${oklch.C} ${oklch.H})`;
+  }
+  function selectCell(id) {
+    selectedId = id;
+    cells.forEach((cell, key) => cell.classList.toggle('selected', key === id));
+    document.getElementById('selectedName').textContent = id;
+    updateReadout(currentColor(id));
+  }
+
+  function showMenu() {
+    document.body.classList.remove('clean-view');
+    menuVisible = true;
+    clearTimeout(hideMenuTimer);
+    hideMenuTimer = setTimeout(hideMenu, AUTO_HIDE_MS);
+  }
+  function hideMenu() {
+    document.body.classList.add('clean-view');
+    menuVisible = false;
+    clearTimeout(hideMenuTimer);
+  }
+  function toggleMenu() {
+    if (menuVisible) hideMenu();
+    else showMenu();
+  }
+
+  // Start with a full-screen grid only. Any mouse movement or M key opens the controls.
+  document.body.classList.add('clean-view');
+  const menuHint = document.getElementById('menuHint');
+  let hintTimer = null;
+  function flashHint() {
+    menuHint.classList.add('visible');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => menuHint.classList.remove('visible'), 2500);
+  }
+  window.addEventListener('mousemove', () => {
+    if (!menuVisible) {
+      showMenu();
+      flashHint();
+    } else {
+      clearTimeout(hideMenuTimer);
+      hideMenuTimer = setTimeout(hideMenu, AUTO_HIDE_MS);
+    }
+  });
+  window.addEventListener('keydown', e => {
+    if (e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      toggleMenu();
+    } else if (e.key === 'Escape') {
+      hideMenu();
+    }
+  });
+  // Clicking a box selects it and opens the controls so its color can be edited.
+  cells.forEach((cell, id) => {
+    cell.addEventListener('click', () => {
+      if (!menuVisible) showMenu();
+      selectCell(id);
+    });
+  });
+  document.addEventListener('click', () => {
+    if (menuVisible) {
+      clearTimeout(hideMenuTimer);
+      hideMenuTimer = setTimeout(hideMenu, AUTO_HIDE_MS);
+    }
+  });
+
+  document.getElementById('colorPicker').addEventListener('input', e => updateColor(selectedId, e.target.value));
+  document.getElementById('hexInput').addEventListener('change', e => {
+    const normalized = normalizeHex(e.target.value);
+    if (normalized) updateColor(selectedId, normalized);
+    else e.target.value = currentColor(selectedId);
+  });
+  document.getElementById('applyPalette').addEventListener('click', () => {
+    const palette = palettes[document.getElementById('preset').value];
+    rowNames.forEach((row, i) => {
+      for (let col=1; col<=7; col++) updateColor(`${row}${col}`, palette[i]);
+    });
+    selectCell(selectedId);
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    cells.forEach((cell, id) => updateColor(id, initialColors[id]));
+    selectCell('A1');
+  });
+  document.getElementById('export').addEventListener('click', () => {
+    const result = {};
+    cells.forEach((cell, id) => result[id] = currentColor(id));
+    const blob = new Blob([JSON.stringify({canvas: '3840x1080', colors: result}, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'box-colors.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+  const swatches = document.getElementById('swatches');
+  swatchColors.forEach(color => {
+    const b = document.createElement('button');
+    b.type='button'; b.className='swatch'; b.style.background=color;
+    b.title=color; b.setAttribute('aria-label', `Apply ${color}`);
+    b.addEventListener('click', () => updateColor(selectedId, color));
+    swatches.appendChild(b);
+  });
+  selectCell('A1');
+})();
+</script>
+</body>
+</html>
