@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3840x1080 Interactive Grid - Hidden Text</title>
+    <style>
+        /* Base Reset & Setup for 3840x1080 Ultra-wide */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #000; /* Black borders between boxes */
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevents scrollbars */
+        }
+
+        /* 7x7 Grid Container */
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            width: 100vw;
+            height: 100vh;
+            gap: 6px; /* Grid line thickness */
+            padding: 6px;
+        }
+
+        /* Individual Box Styling */
+        .box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3vw; 
+            font-weight: bold;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+            position: relative;
+            /* Text color will be set via JS to match background and hide text */
+        }
+
+        .box:hover {
+            filter: brightness(0.9);
+            transform: scale(0.98);
+        }
+
+        /* Menu Styling */
+        #menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 30, 0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 100;
+            font-size: 1.5vw;
+            border: 2px solid #4DB8E6;
+        }
+
+        .menu-header {
+            font-size: 2.5vw;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="color"] {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .timer-text {
+            margin-top: 15px;
+            font-size: 1.2vw;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Grid Container -->
+    <div id="grid"></div>
+
+    <!-- Hidden Interaction Menu -->
+    <div id="menu">
+        <div class="menu-header">Working on Box: <span id="current-box" style="color: #4DB8E6;">None</span></div>
+        
+        <div class="input-group">
+            <label for="bg-color">Change Color:</label>
+            <input type="color" id="bg-color">
+        </div>
+
+        <div class="timer-text">Menu will auto-hide in <span id="countdown">10</span> seconds.</div>
+    </div>
+
+    <script>
+        // 1. Setup Data for 7 Rows and Columns
+        const rows = ['A', 'B', 'C', 'd', 'e', 'f', 'h'];
+        const grid = document.getElementById('grid');
+        const menu = document.getElementById('menu');
+        const currentBoxLabel = document.getElementById('current-box');
+        const bgColorInput = document.getElementById('bg-color');
+        const countdownLabel = document.getElementById('countdown');
+        
+        let hideTimeout;
+        let countdownInterval;
+        let activeBox = null;
+
+        // Helper function to generate Hex colors for initialization
+        function HSLToHex(h, s, l) {
+            s /= 100; l /= 100;
+            let c = (1 - Math.abs(2 * l - 1)) * s,
+                x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+                m = l - c/2, r = 0, g = 0, b = 0;
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; } 
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; } 
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; } 
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; } 
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; } 
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+            r = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+            g = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+            b = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+            return `#${r}${g}${b}`;
+        }
+
+        // 2. Generate the Grid Boxes
+        let boxCount = 0;
+        rows.forEach((row) => {
+            for (let col = 1; col <= 7; col++) {
+                const box = document.createElement('div');
+                const boxId = row + col;
+                
+                box.className = 'box';
+                box.textContent = boxId;
+                box.id = boxId;
+
+                // Generate starting color
+                const hue = Math.floor((boxCount / 49) * 360);
+                const hexColor = HSLToHex(hue, 80, 85);
+                
+                box.style.backgroundColor = hexColor;
+                
+                // HIDE TEXT BY DEFAULT: Make text color exactly the same as background color
+                box.style.color = hexColor; 
+
+                box.dataset.bgColor = hexColor; // Store original color state
+
+                // Click Event to open menu and reveal text
+                box.addEventListener('click', () => openMenu(box, boxId));
+                
+                grid.appendChild(box);
+                boxCount++;
+            }
+        });
+
+        // 3. Menu & Text Reveal Logic
+        function openMenu(box, id) {
+            // If another box was previously open, hide its text again
+            if (activeBox && activeBox !== box) {
+                activeBox.style.color = activeBox.style.backgroundColor;
+                activeBox.style.textShadow = 'none';
+            }
+            
+            activeBox = box;
+            currentBoxLabel.textContent = id;
+            bgColorInput.value = box.dataset.bgColor;
+            
+            // REVEAL TEXT ON CLICK: Change text to black with a white glow to ensure it's readable
+            activeBox.style.color = '#000000';
+            activeBox.style.textShadow = '0 0 10px #ffffff, 0 0 10px #ffffff';
+
+            menu.style.display = 'flex';
+            resetTimer();
+        }
+
+        function closeMenu() {
+            // When menu closes, hide the text of the active box again
+            if (activeBox) {
+                activeBox.style.color = activeBox.style.backgroundColor;
+                activeBox.style.textShadow = 'none';
+                activeBox = null;
+            }
+            
+            menu.style.display = 'none';
+            clearInterval(countdownInterval);
+            clearTimeout(hideTimeout);
+        }
+
+        function resetTimer() {
+            clearTimeout(hideTimeout);
+            clearInterval(countdownInterval);
+
+            let secondsLeft = 10;
+            countdownLabel.textContent = secondsLeft;
+
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                countdownLabel.textContent = secondsLeft;
+            }, 1000);
+
+            // Auto-hide menu after 10 seconds
+            hideTimeout = setTimeout(() => {
+                closeMenu();
+            }, 10000);
+        }
+
+        // 4. Color Change Logic
+        bgColorInput.addEventListener('input', (e) => {
+            if (activeBox) {
+                const newColor = e.target.value;
+                activeBox.style.backgroundColor = newColor;
+                activeBox.dataset.bgColor = newColor; 
+                // The text remains visible while working. 
+                // It will automatically hide (change to match new background) when menu closes.
+            }
+            resetTimer(); // Keep menu alive while editing
+        });
+
+        // Reset timer if clicking anywhere inside the menu
+        menu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetTimer();
+        });
+    </script>
+</body>
+</html>
