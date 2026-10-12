@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultrawide 3840x1080 Sliced Master Image Grid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f9fafb;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ultrawide-canvas {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            box-sizing: border-box;
+            background-color: #0b0f19;
+        }
+
+        .grid-cell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            user-select: none;
+            cursor: pointer;
+            transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+            text-transform: uppercase;
+            font-weight: 800;
+            font-size: clamp(1.5rem, 3vw, 4rem);
+            overflow: hidden;
+            padding: 10px;
+            text-align: center;
+            word-break: break-all;
+            background-repeat: no-repeat;
+        }
+
+        .grid-cell:hover {
+            filter: brightness(1.25);
+            z-index: 10;
+            box-shadow: inset 0 0 35px rgba(255, 255, 255, 0.25);
+        }
+
+        .grid-cell.active-cell {
+            outline: 4px solid #38bdf8;
+            outline-offset: -4px;
+            z-index: 20;
+            filter: brightness(1.3);
+        }
+
+        /* Slide & Fade transition for menu */
+        #controlMenu {
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="topHeader" class="absolute top-4 left-4 right-4 z-30 flex justify-between items-center px-6 py-3 bg-gray-900/85 backdrop-blur-md border border-gray-800 rounded-2xl shadow-2xl transition-opacity duration-300">
+        <div class="flex items-center space-x-3">
+            <div class="w-3.5 h-3.5 bg-cyan-400 rounded-full animate-ping"></div>
+            <h1 class="text-lg font-extrabold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">3840x1080 UNIFORM 7x7 GRID</h1>
+        </div>
+        <div class="flex items-center space-x-3 text-xs font-semibold text-gray-300">
+            <!-- Master Sliced Upload for ALL boxes -->
+            <label class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg cursor-pointer transition shadow flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Upload 1 Master Image (Slices across 49 boxes)</span>
+                <input type="file" id="masterSlicedUpload" accept="image/*" onchange="handleMasterSlicedUpload(event)" class="hidden">
+            </label>
+            <button onclick="toggleAllLabels()" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-lg border border-gray-700 transition">Toggle Labels</button>
+            <button onclick="resetGrid()" class="px-3 py-2 bg-red-900/60 hover:bg-red-800 text-red-200 rounded-lg border border-red-700 transition">Reset Default</button>
+        </div>
+    </header>
+
+    <main id="ultrawideGrid" class="ultrawide-canvas">
+        <!-- Generated dynamically -->
+    </main>
+
+    <div id="controlMenu" class="fixed top-24 right-6 w-96 bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-6 transform translate-x-[125%] opacity-0 pointer-events-none z-50 flex flex-col space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+            <h3 id="menuTitle" class="text-base font-extrabold text-cyan-400 uppercase tracking-wide">Configure Box</h3>
+            <button onclick="explicitCloseMenu()" class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Custom Text Input -->
+        <div class="flex flex-col space-y-1">
+            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Cell Text (Uppercase)</label>
+            <input type="text" id="cellText" oninput="liveUpdate()" class="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm font-semibold uppercase focus:outline-none focus:border-cyan-500 transition">
+        </div>
+
+        <!-- Eyedropper / Image Color Picker -->
+        <div class="flex flex-col space-y-2 border-t border-gray-800 pt-3">
+            <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Image Eyedropper / Color Picker</label>
+            <button onclick="pickColorFromScreen()" class="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white rounded-xl text-xs font-bold transition shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4c0-1.48.8-2.75 2-3.45V5a2 2 0 012-2h4a2 2 0 012 2v9.55A4 4 0 0113 17a4 4 0 01-4 4zm0 0h2a2 2 0 002-2v-1a2 2 0 00-2-2H7a2 2 0 00-2 2v1a2 2 0 002 2z"></path></svg>
+                <span>Pick Color From Image / Screen</span>
+            </button>
+        </div>
+
+        <!-- Color Pickers -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col space-y-1">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Background</label>
+                <div class="flex items-center space-x-2">
+                    <input type="color" id="cellBgColor" oninput="liveUpdate()" class="w-9 h-9 bg-transparent rounded-lg cursor-pointer border border-gray-700">
+                    <input type="text" id="cellBgHex" oninput="syncColorInput('bg')" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs font-mono text-white uppercase">
+                </div>
+            </div>
+            <div class="flex flex-col space-y-1">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Text Color</label>
+                <div class="flex items-center space-x-2">
+                    <input type="color" id="cellTextColor" oninput="liveUpdate()" class="w-9 h-9 bg-transparent rounded-lg cursor-pointer border border-gray-700">
+                    <input type="text" id="cellTextHex" oninput="syncColorInput('text')" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-xs font-mono text-white uppercase">
+                </div>
+            </div>
+        </div>
+
+        <!-- Color Levels & Adjustment Sliders for Images & Backgrounds -->
+        <div class="flex flex-col space-y-3 border-t border-gray-800 pt-3">
+            <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Color Levels & Filters</label>
+            
+            <div class="flex flex-col space-y-1">
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>Brightness</span>
+                    <span id="brightnessVal" class="font-mono text-cyan-400">100%</span>
+                </div>
+                <input type="range" id="filterBrightness" min="0" max="200" value="100" oninput="liveUpdate()" class="w-full accent-cyan-500 cursor-pointer">
+            </div>
+
+            <div class="flex flex-col space-y-1">
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>Contrast</span>
+                    <span id="contrastVal" class="font-mono text-cyan-400">100%</span>
+                </div>
+                <input type="range" id="filterContrast" min="0" max="200" value="100" oninput="liveUpdate()" class="w-full accent-cyan-500 cursor-pointer">
+            </div>
+
+            <div class="flex flex-col space-y-1">
+                <div class="flex justify-between text-xs text-gray-300">
+                    <span>Saturation</span>
+                    <span id="saturateVal" class="font-mono text-cyan-400">100%</span>
+                </div>
+                <input type="range" id="filterSaturate" min="0" max="200" value="100" oninput="liveUpdate()" class="w-full accent-cyan-500 cursor-pointer">
+            </div>
+        </div>
+
+        <!-- Make Same Button -->
+        <div class="flex items-center justify-between bg-gray-800/60 p-2.5 rounded-xl border border-gray-700/60">
+            <span class="text-xs text-gray-300 font-medium">Blend text & background:</span>
+            <button onclick="makeColorsSame()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg text-xs transition shadow">Make Same</button>
+        </div>
+
+        <!-- Individual Box Image Upload / Remove -->
+        <div class="flex flex-col space-y-2 border-t border-gray-800 pt-3">
+            <label class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Single Box Image / Slice Override</label>
+            <div class="flex items-center space-x-2">
+                <label class="flex-1 flex items-center justify-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-xl border border-gray-700 cursor-pointer text-xs font-semibold transition">
+                    <span>Upload Box Image</span>
+                    <input type="file" id="cellImageUpload" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+                </label>
+                <button onclick="removeCellImage()" class="px-3 py-2 bg-red-900/40 hover:bg-red-800/60 text-red-300 rounded-xl border border-red-700 text-xs font-semibold transition">Remove</button>
+            </div>
+        </div>
+
+        <!-- Color Spectrum Display -->
+        <div class="bg-gray-800/40 p-2.5 rounded-xl border border-gray-700/50 text-xs text-gray-400 space-y-1">
+            <p class="font-semibold text-gray-300">Color Spectrum Support:</p>
+            <p id="colorFormatsDisplay" class="font-mono text-cyan-300">HEX / RGB / HSL / OKLCH ready</p>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-gray-800">
+            <button onclick="explicitCloseMenu()" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition shadow-lg">Close Menu</button>
+        </div>
+    </div>
+
+    <script>
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'H'];
+        const cols = [1, 2, 3, 4, 5, 6, 7];
+
+        let gridState = JSON.parse(localStorage.getItem('ultrawide_3840_uniform_state')) || {};
+        let activeCellId = null;
+        let hideTimer = null;
+        let labelsVisible = true;
+        let menuExplicitlyClosed = false;
+
+        function getDefaultCellState(id) {
+            return {
+                text: id,
+                bgColor: '#0f172a',
+                textColor: '#0f172a', // Camouflage match by default
+                bgImage: '',
+                bgPosition: '',
+                bgSize: '',
+                brightness: 100,
+                contrast: 100,
+                saturate: 100
+            };
+        }
+
+        function initGrid() {
+            const container = document.getElementById('ultrawideGrid');
+            container.innerHTML = '';
+
+            rows.forEach((r, rowIndex) => {
+                cols.forEach((c, colIndex) => {
+                    const id = `${r}${c}`;
+                    if (!gridState[id]) {
+                        gridState[id] = getDefaultCellState(id);
+                    }
+                    const state = gridState[id];
+
+                    const cell = document.createElement('div');
+                    cell.id = `cell-${id}`;
+                    cell.className = `grid-cell ${activeCellId === id ? 'active-cell' : ''}`;
+                    
+                    if (state.bgImage) {
+                        cell.style.backgroundImage = `url('${state.bgImage}')`;
+                        cell.style.backgroundPosition = state.bgPosition || `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
+                        cell.style.backgroundSize = state.bgSize || '700% 700%';
+                        cell.style.backgroundColor = 'transparent';
+                    } else {
+                        cell.style.backgroundImage = 'none';
+                        cell.style.backgroundColor = state.bgColor;
+                    }
+
+                    // Apply filter level adjustments
+                    cell.style.filter = `brightness(${state.brightness || 100}%) contrast(${state.contrast || 100}%) saturate(${state.saturate || 100}%)`;
+
+                    // If active cell, ensure high contrast text color for usability
+                    if (activeCellId === id) {
+                        cell.style.color = '#38bdf8';
+                    } else {
+                        cell.style.color = state.textColor;
+                    }
+
+                    cell.innerText = labelsVisible ? state.text : '';
+
+                    cell.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (id === 'A1' && activeCellId !== 'A1') {
+                            toggleAllLabels();
+                        }
+                        openMenu(id);
+                    });
+
+                    container.appendChild(cell);
+                });
+            });
+        }
+
+        function resetActivityTimer() {
+            if (menuExplicitlyClosed) return;
+            const menu = document.getElementById('controlMenu');
+            const header = document.getElementById('topHeader');
+            
+            menu.classList.remove('translate-x-[125%]', 'opacity-0', 'pointer-events-none');
+            header.classList.remove('opacity-0', 'pointer-events-none');
+
+            if (hideTimer) clearTimeout(hideTimer);
+            hideTimer = setTimeout(() => {
+                if (!menuExplicitlyClosed) {
+                    menu.classList.add('translate-x-[125%]', 'opacity-0', 'pointer-events-none');
+                    header.classList.add('opacity-0', 'pointer-events-none');
+                }
+            }, 10000);
+        }
+
+        function explicitCloseMenu() {
+            menuExplicitlyClosed = true;
+            if (hideTimer) clearTimeout(hideTimer);
+            const menu = document.getElementById('controlMenu');
+            const header = document.getElementById('topHeader');
+            menu.classList.add('translate-x-[125%]', 'opacity-0', 'pointer-events-none');
+            header.classList.add('opacity-0', 'pointer-events-none');
+            
+            activeCellId = null;
+            document.querySelectorAll('.grid-cell').forEach(el => el.classList.remove('active-cell'));
+        }
+
+        // Wake up menu on mouse move or touch anywhere
+        window.addEventListener('mousemove', () => {
+            if (menuExplicitlyClosed) {
+                menuExplicitlyClosed = false;
+            }
+            resetActivityTimer();
+        });
+
+        window.addEventListener('touchstart', () => {
+            if (menuExplicitlyClosed) {
+                menuExplicitlyClosed = false;
+            }
+            resetActivityTimer();
+        });
+
+        function toggleAllLabels() {
+            labelsVisible = !labelsVisible;
+            initGrid();
+        }
+
+        function handleMasterSlicedUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                rows.forEach((r, rowIndex) => {
+                    cols.forEach((c, colIndex) => {
+                        const id = `${r}${c}`;
+                        if (!gridState[id]) {
+                            gridState[id] = getDefaultCellState(id);
+                        }
+                        gridState[id].bgImage = imageUrl;
+                        gridState[id].bgPosition = `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
+                        gridState[id].bgSize = '700% 700%';
+                    });
+                });
+                localStorage.setItem('ultrawide_3840_uniform_state', JSON.stringify(gridState));
+                initGrid();
+                resetActivityTimer();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function pickColorFromScreen() {
+            if ('EyeDropper' in window) {
+                try {
+                    const eyeDropper = new EyeDropper();
+                    const result = await eyeDropper.open();
+                    const pickedHex = result.sRGBHex;
+
+                    document.getElementById('cellBgColor').value = pickedHex;
+                    document.getElementById('cellBgHex').value = pickedHex;
+                    liveUpdate();
+                } catch (e) {
+                    console.log('Eyedropper canceled or failed', e);
+                }
+            } else {
+                alert('Eyedropper API is supported in modern Chromium browsers (Chrome, Edge, Opera).');
+            }
+        }
+
+        function openMenu(id) {
+            activeCellId = id;
+            menuExplicitlyClosed = false;
+            const state = gridState[id] || getDefaultCellState(id);
+
+            document.getElementById('menuTitle').innerText = `Box: ${id}`;
+            document.getElementById('cellText').value = state.text;
+            document.getElementById('cellBgColor').value = state.bgColor || '#0f172a';
+            document.getElementById('cellBgHex').value = state.bgColor || '#0f172a';
+            document.getElementById('cellTextColor').value = state.textColor || '#0f172a';
+            document.getElementById('cellTextHex').value = state.textColor || '#0f172a';
+
+            // Filter levels
+            document.getElementById('filterBrightness').value = state.brightness || 100;
+            document.getElementById('filterContrast').value = state.contrast || 100;
+            document.getElementById('filterSaturate').value = state.saturate || 100;
+
+            document.getElementById('brightnessVal').innerText = `${state.brightness || 100}%`;
+            document.getElementById('contrastVal').innerText = `${state.contrast || 100}%`;
+            document.getElementById('saturateVal').innerText = `${state.saturate || 100}%`;
+
+            updateColorFormats(state.bgColor || '#0f172a');
+
+            document.querySelectorAll('.grid-cell').forEach(el => el.classList.remove('active-cell'));
+            const currentCell = document.getElementById(`cell-${id}`);
+            if (currentCell) currentCell.classList.add('active-cell');
+
+            const menu = document.getElementById('controlMenu');
+            menu.classList.remove('translate-x-[125%]', 'opacity-0', 'pointer-events-none');
+
+            resetActivityTimer();
+            initGrid(); // Re-render to highlight active cell text color
+        }
+
+        function liveUpdate() {
+            if (!activeCellId) return;
+            resetActivityTimer();
+
+            let textInput = document.getElementById('cellText').value.toUpperCase();
+            const bgColor = document.getElementById('cellBgColor').value;
+            const textColor = document.getElementById('cellTextColor').value;
+
+            const brightness = document.getElementById('filterBrightness').value;
+            const contrast = document.getElementById('filterContrast').value;
+            const saturate = document.getElementById('filterSaturate').value;
+
+            document.getElementById('brightnessVal').innerText = `${brightness}%`;
+            document.getElementById('contrastVal').innerText = `${contrast}%`;
+            document.getElementById('saturateVal').innerText = `${saturate}%`;
+
+            document.getElementById('cellBgHex').value = bgColor;
+            document.getElementById('cellTextHex').value = textColor;
+
+            updateColorFormats(bgColor);
+
+            if (!gridState[activeCellId]) {
+                gridState[activeCellId] = getDefaultCellState(activeCellId);
+            }
+
+            gridState[activeCellId].text = textInput;
+            gridState[activeCellId].bgColor = bgColor;
+            gridState[activeCellId].textColor = textColor;
+            gridState[activeCellId].brightness = brightness;
+            gridState[activeCellId].contrast = contrast;
+            gridState[activeCellId].saturate = saturate;
+
+            const cell = document.getElementById(`cell-${activeCellId}`);
+            if (cell) {
+                if (!gridState[activeCellId].bgImage) {
+                    cell.style.backgroundColor = bgColor;
+                }
+                cell.style.color = '#38bdf8'; // Active highlight text color
+                cell.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%)`;
+                cell.innerText = labelsVisible ? textInput : '';
+            }
+
+            localStorage.setItem('ultrawide_3840_uniform_state', JSON.stringify(gridState));
+        }
+
+        function handleImageUpload(event) {
+            if (!activeCellId) return;
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                if (!gridState[activeCellId]) {
+                    gridState[activeCellId] = getDefaultCellState(activeCellId);
+                }
+                gridState[activeCellId].bgImage = imageUrl;
+                gridState[activeCellId].bgPosition = 'center';
+                gridState[activeCellId].bgSize = 'cover';
+
+                const cell = document.getElementById(`cell-${activeCellId}`);
+                if (cell) {
+                    cell.style.backgroundImage = `url('${imageUrl}')`;
+                    cell.style.backgroundPosition = 'center';
+                    cell.style.backgroundSize = 'cover';
+                }
+
+                localStorage.setItem('ultrawide_3840_uniform_state', JSON.stringify(gridState));
+                resetActivityTimer();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeCellImage() {
+            if (!activeCellId) return;
+            if (gridState[activeCellId]) {
+                gridState[activeCellId].bgImage = '';
+                gridState[activeCellId].bgPosition = '';
+                gridState[activeCellId].bgSize = '';
+            }
+
+            const cell = document.getElementById(`cell-${activeCellId}`);
+            if (cell) {
+                cell.style.backgroundImage = 'none';
+                cell.style.backgroundColor = gridState[activeCellId].bgColor;
+            }
+
+            localStorage.setItem('ultrawide_3840_uniform_state', JSON.stringify(gridState));
+            resetActivityTimer();
+        }
+
+        function syncColorInput(type) {
+            if (type === 'bg') {
+                const val = document.getElementById('cellBgHex').value;
+                if (/^#[0-9A-F]{6}$/i.test(val)) {
+                    document.getElementById('cellBgColor').value = val;
+                    liveUpdate();
+                }
+            } else if (type === 'text') {
+                const val = document.getElementById('cellTextHex').value;
+                if (/^#[0-9A-F]{6}$/i.test(val)) {
+                    document.getElementById('cellTextColor').value = val;
+                    liveUpdate();
+                }
+            }
+        }
+
+        function makeColorsSame() {
+            const bgHex = document.getElementById('cellBgColor').value;
+            document.getElementById('cellTextColor').value = bgHex;
+            document.getElementById('cellTextHex').value = bgHex;
+            liveUpdate();
+        }
+
+        function hexToRgb(hex) {
+            let bigint = parseInt(hex.replace('#',''), 16);
+            let r = (bigint >> 16) & 255;
+            let g = (bigint >> 8) & 255;
+            let b = bigint & 255;
+            return `${r}, ${g}, ${b}`;
+        }
+
+        function hexToHsl(hex) {
+            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (!result) return '0, 0%, 0%';
+            let r = parseInt(result[1], 16) / 255;
+            let g = parseInt(result[2], 16) / 255;
+            let b = parseInt(result[3], 16) / 255;
+            let max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return `${Math.round(h * 360)}°, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%`;
+        }
+
+        function updateColorFormats(hex) {
+            const rgb = hexToRgb(hex);
+            const hsl = hexToHsl(hex);
+            document.getElementById('colorFormatsDisplay').innerHTML = `HEX: <span class="text-white">${hex}</span> | RGB: <span class="text-white">${rgb}</span><br>HSL: <span class="text-white">${hsl}</span>`;
+        }
+
+        function resetGrid() {
+            localStorage.removeItem('ultrawide_3840_uniform_state');
+            gridState = {};
+            explicitCloseMenu();
+            initGrid();
+        }
+
+        window.onload = () => {
+            initGrid();
+            resetActivityTimer();
+        };
+    </script>
+</body>
+</html>
