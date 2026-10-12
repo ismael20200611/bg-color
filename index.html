@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -115,93 +116,35 @@ footer {
   margin-top: 28px;
 }
 
-.page {
-  display: none;
-  text-align: center;
-  padding: 30px 10px;
-  animation: appear .3s ease;
-}
-
-.page.active {
-  display: block;
-}
-
-.home.hidden {
-  display: none;
-}
-
-.page-icon {
-  width: 100px;
-  height: 100px;
-  margin: 25px auto;
-  display: grid;
-  place-items: center;
-  border-radius: 28px;
-  background: linear-gradient(135deg,#00baff,#6338f5);
-  font-size: 35px;
-  font-weight: bold;
-  box-shadow: 0 12px 35px #285bff55;
-}
-
-.message {
-  max-width: 450px;
-  margin: 25px auto;
-  padding: 18px;
-  background: #0b2332;
-  border: 1px solid #1d6658;
-  border-radius: 15px;
-  color: #b8ffe5;
-}
-
-.back {
-  display: inline-block;
-  margin-top: 25px;
-  padding: 14px 25px;
-  border: 0;
-  border-radius: 30px;
-  background: linear-gradient(100deg,#008cff,#8d2cff);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-@keyframes appear {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 @media(max-width:540px) {
-  body { padding: 18px; }
-  .buttons { grid-template-columns: 1fr; }
-  .btn { min-height: 64px; }
+  body {
+    padding: 18px;
+  }
+
+  .buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .btn {
+    min-height: 64px;
+  }
 }
 </style>
 </head>
 
 <body>
+
 <main class="container">
 
-  <section id="home" class="home">
-    <header>
-      <h1>NWEZHYAN <span>10</span> Links</h1>
-      <p>Choose a button to open a page</p>
-      <div class="line"></div>
-    </header>
-
-    <nav class="buttons" id="buttons"></nav>
-
-    <footer>© 2026 NWEZHYAN</footer>
-  </section>
-
-  <section id="page" class="page">
-    <div class="page-icon" id="pageNumber">01</div>
-    <h1 id="pageTitle">Page One</h1>
-    <p id="pageDescription">Welcome to your page!</p>
+  <header>
+    <h1>NWEZHYAN <span>10</span> Links</h1>
+    <p>Choose a button to open a page</p>
     <div class="line"></div>
-    <div class="message" id="pageMessage"></div>
-    <button class="back" onclick="goHome()">← Back to Home</button>
-  </section>
+  </header>
+
+  <nav class="buttons" id="buttons"></nav>
+
+  <footer>© 2026 NWEZHYAN</footer>
 
 </main>
 
@@ -221,7 +164,8 @@ const buttons = document.getElementById("buttons");
 for (let i = 1; i <= 10; i++) {
   const button = document.createElement("a");
 
-  button.href = "#" + i;
+  // Page 1 -> 1.html, Page 2 -> 2.html ... Page 10 -> 10.html
+  button.href = i + ".html";
   button.className = "btn " + colors[i - 1];
 
   button.innerHTML = `
@@ -230,84 +174,9 @@ for (let i = 1; i <= 10; i++) {
     <span class="arrow">→</span>
   `;
 
-  button.addEventListener("click", function(event) {
-    event.preventDefault();
-    openPage(i);
-  });
-
   buttons.appendChild(button);
 }
-
-function openPage(number) {
-  document.getElementById("home").classList.add("hidden");
-
-  const page = document.getElementById("page");
-  page.classList.remove("active");
-
-  void page.offsetWidth;
-
-  document.getElementById("pageNumber").textContent =
-    String(number).padStart(2, "0");
-
-  document.getElementById("pageTitle").textContent =
-    "Page " + words[number - 1];
-
-  document.getElementById("pageDescription").textContent =
-    "Welcome to page " + number + "!";
-
-  document.getElementById("pageMessage").textContent =
-    "✓ Page " + number + " opened successfully.";
-
-  page.classList.add("active");
-
-  history.pushState({ page: number }, "", "#" + number);
-}
-
-function goHome() {
-  document.getElementById("page").classList.remove("active");
-  document.getElementById("home").classList.remove("hidden");
-
-  history.pushState({ page: 0 }, "", location.pathname);
-}
-
-function showHome() {
-  document.getElementById("page").classList.remove("active");
-  document.getElementById("home").classList.remove("hidden");
-}
-
-window.addEventListener("popstate", function() {
-  const number = parseInt(location.hash.slice(1), 10);
-
-  if (number >= 1 && number <= 10) {
-    openPageWithoutHistory(number);
-  } else {
-    showHome();
-  }
-});
-
-function openPageWithoutHistory(number) {
-  document.getElementById("home").classList.add("hidden");
-
-  document.getElementById("pageNumber").textContent =
-    String(number).padStart(2, "0");
-
-  document.getElementById("pageTitle").textContent =
-    "Page " + words[number - 1];
-
-  document.getElementById("pageDescription").textContent =
-    "Welcome to page " + number + "!";
-
-  document.getElementById("pageMessage").textContent =
-    "✓ Page " + number + " opened successfully.";
-
-  document.getElementById("page").classList.add("active");
-}
-
-const initialPage = parseInt(location.hash.slice(1), 10);
-
-if (initialPage >= 1 && initialPage <= 10) {
-  openPageWithoutHistory(initialPage);
-}
 </script>
+
 </body>
 </html>
