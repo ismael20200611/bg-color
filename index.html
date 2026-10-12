@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My 10 Links</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>My <span>10</span> Links</h1>
+      <p class="subtitle">Choose a button to open the next page</p>
+      <div class="accent"></div>
+    </header>
+    <nav class="buttons" aria-label="Page links">
+      <a class="btn" href="1.html"><span class="num">01</span><span class="label">Page One</span><span class="arrow">→</span></a>
+      <a class="btn" href="2.html"><span class="num">02</span><span class="label">Page Two</span><span class="arrow">→</span></a>
+      <a class="btn" href="3.html"><span class="num">03</span><span class="label">Page Three</span><span class="arrow">→</span></a>
+      <a class="btn" href="4.html"><span class="num">04</span><span class="label">Page Four</span><span class="arrow">→</span></a>
+      <a class="btn" href="5.html"><span class="num">05</span><span class="label">Page Five</span><span class="arrow">→</span></a>
+      <a class="btn" href="6.html"><span class="num">06</span><span class="label">Page Six</span><span class="arrow">→</span></a>
+      <a class="btn" href="7.html"><span class="num">07</span><span class="label">Page Seven</span><span class="arrow">→</span></a>
+      <a class="btn" href="8.html"><span class="num">08</span><span class="label">Page Eight</span><span class="arrow">→</span></a>
+      <a class="btn" href="9.html"><span class="num">09</span><span class="label">Page Nine</span><span class="arrow">→</span></a>
+      <a class="btn" href="10.html"><span class="num">10</span><span class="label">Page Ten</span><span class="arrow">→</span></a>
+    </nav>
+    <footer>© 2026 My Website · HTML, CSS & JavaScript</footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
+"""
+for i, title in enumerate(["One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"], start=1):
+    page = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page {title}</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="wrap">
+    <section class="page-card">
+      <div class="page-icon">{i:02}</div>
+      <h1>Page <span>{title}</span></h1>
+      <p>This is page {i}, opened from <strong>{'index.html' if i == 1 else 'the home page'}</strong>.</p>
+      <div class="accent"></div>
+      <div class="note">✓ You successfully opened <strong>{i}.html</strong></div>
+      <a class="back" href="index.html">← Go Back to Home</a>
+    </section>
+  </main>
+</body>
+</html>
