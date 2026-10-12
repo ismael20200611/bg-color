@@ -255,8 +255,8 @@
                     if (state.bgImage) {
                         const opacityDecimal = (state.overlayOpacity !== undefined ? state.overlayOpacity : 20) / 100;
                         // Blend color tint gradient over the original sliced background image
-                        cell.style.backgroundImage = `linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0)), linear-gradient(${state.bgColor}, ${state.bgColor}), url('${state.bgImage}')`;
-                        cell.style.backgroundBlendMode = 'overlay, normal, normal';
+                        cell.style.backgroundImage = `linear-gradient(rgba(0,0,0,${opacityDecimal}), rgba(0,0,0,${opacityDecimal})), linear-gradient(${state.bgColor}, ${state.bgColor}), url('${state.bgImage}')`;
+                        cell.style.backgroundBlendMode = 'overlay, color, normal';
                         cell.style.backgroundPosition = state.bgPosition || `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
                         cell.style.backgroundSize = state.bgSize || '700% 700%';
                     } else {
@@ -344,21 +344,47 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const imageUrl = e.target.result;
-                rows.forEach((r, rowIndex) => {
-                    cols.forEach((c, colIndex) => {
-                        const id = `${r}${c}`;
-                        if (!gridState[id]) {
-                            gridState[id] = getDefaultCellState(id);
-                        }
-                        gridState[id].bgImage = imageUrl;
-                        gridState[id].bgPosition = `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
-                        gridState[id].bgSize = '700% 700%';
+                const img = new Image();
+                img.onload = function() {
+                    // Compress image using canvas to prevent QuotaExceededError in localStorage
+                    const canvas = document.createElement('canvas');
+                    const MAX_DIM = 1920;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height && width > MAX_DIM) {
+                        height = Math.round((height * MAX_DIM) / width);
+                        width = MAX_DIM;
+                    } else if (height > MAX_DIM) {
+                        width = Math.round((width * MAX_DIM) / height);
+                        height = MAX_DIM;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                    rows.forEach((r, rowIndex) => {
+                        cols.forEach((c, colIndex) => {
+                            const id = `${r}${c}`;
+                            if (!gridState[id]) {
+                                gridState[id] = getDefaultCellState(id);
+                            }
+                            gridState[id].bgImage = compressedDataUrl;
+                            gridState[id].bgPosition = `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
+                            gridState[id].bgSize = '700% 700%';
+                        });
                     });
-                });
-                localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
-                initGrid();
-                resetActivityTimer();
+                    
+                    try {
+                        localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+                    } catch (err) {
+                        console.error('Storage quota reached even after compression', err);
+                    }
+                    initGrid();
+                    resetActivityTimer();
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -458,9 +484,11 @@
             const cell = document.getElementById(`cell-${activeCellId}`);
             if (cell) {
                 if (gridState[activeCellId].bgImage) {
-                    cell.style.backgroundImage = `linear-gradient(${bgColor}, ${bgColor}), url('${gridState[activeCellId].bgImage}')`;
-                    cell.style.backgroundBlendMode = 'color';
+                    const opacityDecimal = overlayOpacity / 100;
+                    cell.style.backgroundImage = `linear-gradient(rgba(0,0,0,${opacityDecimal}), rgba(0,0,0,${opacityDecimal})), linear-gradient(${bgColor}, ${bgColor}), url('${gridState[activeCellId].bgImage}')`;
+                    cell.style.backgroundBlendMode = 'overlay, color, normal';
                 } else {
+                    cell.style.backgroundImage = 'none';
                     cell.style.backgroundColor = bgColor;
                 }
                 cell.style.color = '#38bdf8'; // Active highlight text color
@@ -468,7 +496,11 @@
                 cell.innerText = labelsVisible ? textInput : '';
             }
 
-            localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+            try {
+                localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+            } catch (err) {
+                console.error('Storage quota error', err);
+            }
         }
 
         function handleImageUpload(event) {
@@ -478,23 +510,47 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const imageUrl = e.target.result;
-                if (!gridState[activeCellId]) {
-                    gridState[activeCellId] = getDefaultCellState(activeCellId);
-                }
-                gridState[activeCellId].bgImage = imageUrl;
-                gridState[activeCellId].bgPosition = 'center';
-                gridState[activeCellId].bgSize = 'cover';
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_DIM = 1200;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height && width > MAX_DIM) {
+                        height = Math.round((height * MAX_DIM) / width);
+                        width = MAX_DIM;
+                    } else if (height > MAX_DIM) {
+                        width = Math.round((width * MAX_DIM) / height);
+                        height = MAX_DIM;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-                const cell = document.getElementById(`cell-${activeCellId}`);
-                if (cell) {
-                    cell.style.backgroundImage = `url('${imageUrl}')`;
-                    cell.style.backgroundPosition = 'center';
-                    cell.style.backgroundSize = 'cover';
-                }
+                    if (!gridState[activeCellId]) {
+                        gridState[activeCellId] = getDefaultCellState(activeCellId);
+                    }
+                    gridState[activeCellId].bgImage = compressedDataUrl;
+                    gridState[activeCellId].bgPosition = 'center';
+                    gridState[activeCellId].bgSize = 'cover';
 
-                localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
-                resetActivityTimer();
+                    const cell = document.getElementById(`cell-${activeCellId}`);
+                    if (cell) {
+                        cell.style.backgroundImage = `url('${compressedDataUrl}')`;
+                        cell.style.backgroundPosition = 'center';
+                        cell.style.backgroundSize = 'cover';
+                    }
+
+                    try {
+                        localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+                    } catch (err) {
+                        console.error('Storage quota error', err);
+                    }
+                    resetActivityTimer();
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -513,7 +569,11 @@
                 cell.style.backgroundColor = gridState[activeCellId].bgColor;
             }
 
-            localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+            try {
+                localStorage.setItem('ultrawide_3840_uniform_tint_state', JSON.stringify(gridState));
+            } catch (err) {
+                console.error('Storage quota error', err);
+            }
             resetActivityTimer();
         }
 
