@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultrawide 3840x1080 Snow Glass Grid System</title>
+    <title>Ultrawide 3840x1080 Snow Glass Grid System (6x6)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
@@ -38,8 +38,8 @@
             width: 100vw;
             height: 100vh;
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: repeat(7, 1fr);
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 1fr);
             box-sizing: border-box;
             background: rgba(10, 20, 38, 0.4);
         }
@@ -120,7 +120,7 @@
         <div class="flex items-center space-x-3">
             <div class="w-3.5 h-3.5 bg-sky-200 rounded-full animate-pulse shadow-[0_0_12px_#bae6fd]"></div>
             <h1 class="text-lg font-black tracking-wider bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent drop-shadow">
-                ❄️ 3840x1080 SNOW GLASS GRID SYSTEM
+                ❄️ 3840x1080 SNOW GLASS GRID SYSTEM (6x6)
             </h1>
         </div>
         <div class="flex items-center space-x-3 text-xs font-semibold text-slate-200">
@@ -309,13 +309,13 @@
             requestAnimationFrame(animateSnow);
         }
 
-        // Grid state management & logic
-        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'H'];
-        const cols = [1, 2, 3, 4, 5, 6, 7];
+        // Grid state management & logic (Converted to 6x6)
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const cols = [1, 2, 3, 4, 5, 6];
 
         let gridState = {};
         try {
-            const saved = localStorage.getItem('ultrawide_3840_snow_glass_v4');
+            const saved = localStorage.getItem('ultrawide_3840_snow_glass_v6');
             if (saved) {
                 gridState = JSON.parse(saved);
             }
@@ -346,7 +346,7 @@
 
         function safeSaveState() {
             try {
-                localStorage.setItem('ultrawide_3840_snow_glass_v4', JSON.stringify(gridState));
+                localStorage.setItem('ultrawide_3840_snow_glass_v6', JSON.stringify(gridState));
             } catch (err) {
                 console.warn('Storage quota reached.', err);
             }
@@ -374,8 +374,8 @@
                         cell.style.backgroundImage = `linear-gradient(rgba(${rgbMatch}, ${opacityDecimal}), rgba(${rgbMatch}, ${opacityDecimal})), url('${state.bgImage}')`;
                         cell.style.backgroundBlendMode = 'normal';
                         cell.style.backgroundColor = originalView100 ? 'transparent' : state.bgColor;
-                        cell.style.backgroundPosition = state.bgPosition || `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
-                        cell.style.backgroundSize = state.bgSize || '700% 700%';
+                        cell.style.backgroundPosition = state.bgPosition || `${(colIndex / 5) * 100}% ${(rowIndex / 5) * 100}%`;
+                        cell.style.backgroundSize = state.bgSize || '600% 600%';
                     } else {
                         cell.style.backgroundImage = 'none';
                         cell.style.backgroundColor = state.bgColor;
@@ -497,8 +497,8 @@
                                 gridState[id] = getDefaultCellState(id);
                             }
                             gridState[id].bgImage = compressedDataUrl;
-                            gridState[id].bgPosition = `${(colIndex / 6) * 100}% ${(rowIndex / 6) * 100}%`;
-                            gridState[id].bgSize = '700% 700%';
+                            gridState[id].bgPosition = `${(colIndex / 5) * 100}% ${(rowIndex / 5) * 100}%`;
+                            gridState[id].bgSize = '600% 600%';
                         });
                     });
                     
@@ -749,7 +749,7 @@
 
         function resetGrid() {
             try {
-                localStorage.removeItem('ultrawide_3840_snow_glass_v4');
+                localStorage.removeItem('ultrawide_3840_snow_glass_v6');
             } catch (e) {}
             gridState = {};
             explicitCloseMenu();
